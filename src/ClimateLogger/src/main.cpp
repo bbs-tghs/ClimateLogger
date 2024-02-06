@@ -3,6 +3,9 @@
 
 #include "ezButton.h"
 #include "main.h"
+
+#include "ezButton.h"
+#include "main.h"
 #include <SPI.h>
 #include <Adafruit_BME680.h>
 
