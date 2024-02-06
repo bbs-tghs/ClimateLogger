@@ -1,46 +1,50 @@
 #include <Arduino.h>
 #include <Wire.h>
+
+#include "ezButton.h"
+#include "main.h"
 #include <SPI.h>
-#include <Adafruit_BME280.h>
 #include <Adafruit_BME680.h>
-#include <Adafruit_CCS811.h>
+
+Adafruit_BME680 bme;
 
 void scanner ()
 {
-  Serial.println();
-  Serial.println("I2C scanner. Scanning ...");
-  byte count = 0;
-
-  Wire.begin();
-  for (byte i = 8; i < 120; i++)
-  {
-    Wire.beginTransmission(i);          // Begin I2C transmission Address (i)
-    if (Wire.endTransmission() == 0)  // Receive 0 = success (ACK response) 
-    {
-      Serial.print("Found address: ");
-      Serial.print(i, DEC);
-      Serial.print(" (0x");
-      Serial.print(i, HEX);     // PCF8574 7 bit address
-      Serial.println(")");
-      count++;
-    }
+  if(bme.endReading()){
+    Serial.println(String(bme.temperature) + " " 
+                + String(bme.pressure) + " " 
+                + String(bme.humidity));
   }
-  Serial.print("Found ");      
-  Serial.print(count, DEC);        // numbers of devices
-  Serial.println(" device(s).");
 }
 
 
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(115200);  
-  Wire.begin( SDA, SCL );   // sda= GPIO_21 /scl= GPIO_22
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-  scanner();
+  // put your setup code here, to run once:  
+  
+  Serial.begin(MONITOR_SPEED);
+  while(!Serial) {;}
+  randomSeed(analogRead(0));
   delay(500);
 
+  pinMode(SW_LOADED, INPUT_PULLUP);
+  pinMode(SW_CONFIG, INPUT_PULLUP);
+  
+  //FTDI232RL-Chip is connected to Serial2
+  //This port should be used to communicate with this device
+  //So Serial1 can be used for monitoring as usual
+  
+  Wire.begin (SDA, SCL);   // sda= GPIO_21 /scl= GPIO_22
+
+  bme.begin();
+  bme.setTemperatureOversampling(BME680_OS_8X);
+  bme.setHumidityOversampling(BME680_OS_2X);
+  bme.setPressureOversampling(BME680_OS_4X);
+  bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
+  bme.setGasHeater(320, 150); // 320*C for 150 ms
 }
 
+void loop() {  
+  if (Serial.readString() == "print"){
+    scanner();
+  }
+}
